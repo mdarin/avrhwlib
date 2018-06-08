@@ -1,0 +1,658 @@
+   1               	# 1 "lcd.asm"
+   1               	/* ***********************************************************************
+   0               	
+   0               	
+   2               	**
+   3               	**  Copyright (C) 2005  Christian Kranz
+   4               	**
+   5               	**  Siemens S65 Display Control
+   6               	**
+   7               	*********************************************************************** */
+   8               	
+   9               	#define __ASSEMBLER__ 1
+  10               	#define __SFR_OFFSET 0
+  11               	#include <avr/io.h>
+   1               	/* Copyright (c) 2002,2003,2005,2006,2007 Marek Michalkiewicz, Joerg Wunsch
+   2               	   Copyright (c) 2007 Eric B. Weddington
+   3               	   All rights reserved.
+   4               	
+   5               	   Redistribution and use in source and binary forms, with or without
+   6               	   modification, are permitted provided that the following conditions are met:
+   7               	
+   8               	   * Redistributions of source code must retain the above copyright
+   9               	     notice, this list of conditions and the following disclaimer.
+  10               	
+  11               	   * Redistributions in binary form must reproduce the above copyright
+  12               	     notice, this list of conditions and the following disclaimer in
+  13               	     the documentation and/or other materials provided with the
+  14               	     distribution.
+  15               	
+  16               	   * Neither the name of the copyright holders nor the names of
+  17               	     contributors may be used to endorse or promote products derived
+  18               	     from this software without specific prior written permission.
+  19               	
+  20               	  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  21               	  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  22               	  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  23               	  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  24               	  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  25               	  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  26               	  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  27               	  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  28               	  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  29               	  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  30               	  POSSIBILITY OF SUCH DAMAGE. */
+  31               	
+  32               	/* $Id: io.h,v 1.52.2.19 2009/02/19 21:10:54 arcanum Exp $ */
+  33               	
+  34               	/** \file */
+  35               	/** \defgroup avr_io <avr/io.h>: AVR device-specific IO definitions
+  36               	    \code #include <avr/io.h> \endcode
+  37               	
+  38               	    This header file includes the apropriate IO definitions for the
+  39               	    device that has been specified by the <tt>-mmcu=</tt> compiler
+  40               	    command-line switch.  This is done by diverting to the appropriate
+  41               	    file <tt>&lt;avr/io</tt><em>XXXX</em><tt>.h&gt;</tt> which should
+  42               	    never be included directly.  Some register names common to all
+  43               	    AVR devices are defined directly within <tt>&lt;avr/common.h&gt;</tt>,
+  44               	    which is included in <tt>&lt;avr/io.h&gt;</tt>,
+  45               	    but most of the details come from the respective include file.
+  46               	
+  47               	    Note that this file always includes the following files:
+  48               	    \code 
+  49               	    #include <avr/sfr_defs.h>
+  50               	    #include <avr/portpins.h>
+  51               	    #include <avr/common.h>
+  52               	    #include <avr/version.h>
+  53               	    \endcode
+  54               	    See \ref avr_sfr for more details about that header file.
+  55               	
+  56               	    Included are definitions of the IO register set and their
+  57               	    respective bit values as specified in the Atmel documentation.
+  58               	    Note that inconsistencies in naming conventions,
+  59               	    so even identical functions sometimes get different names on
+  60               	    different devices.
+  61               	
+  62               	    Also included are the specific names useable for interrupt
+  63               	    function definitions as documented
+  64               	    \ref avr_signames "here".
+  65               	
+  66               	    Finally, the following macros are defined:
+  67               	
+  68               	    - \b RAMEND
+  69               	    <br>
+  70               	    The last on-chip RAM address.
+  71               	    <br>
+  72               	    - \b XRAMEND
+  73               	    <br>
+  74               	    The last possible RAM location that is addressable. This is equal to 
+  75               	    RAMEND for devices that do not allow for external RAM. For devices 
+  76               	    that allow external RAM, this will be larger than RAMEND.
+  77               	    <br>
+  78               	    - \b E2END
+  79               	    <br>
+  80               	    The last EEPROM address.
+  81               	    <br>
+  82               	    - \b FLASHEND
+  83               	    <br>
+  84               	    The last byte address in the Flash program space.
+  85               	    <br>
+  86               	    - \b SPM_PAGESIZE
+  87               	    <br>
+  88               	    For devices with bootloader support, the flash pagesize
+  89               	    (in bytes) to be used for the \c SPM instruction. 
+  90               	    - \b E2PAGESIZE
+  91               	    <br>
+  92               	    The size of the EEPROM page.
+  93               	    
+  94               	*/
+  95               	
+  96               	#ifndef _AVR_IO_H_
+  97               	#define _AVR_IO_H_
+  98               	
+  99               	#include <avr/sfr_defs.h>
+   1               	/* Copyright (c) 2002, Marek Michalkiewicz <marekm@amelek.gda.pl>
+ 100               	
+ 101               	#if defined (__AVR_AT94K__)
+ 102               	#  include <avr/ioat94k.h>
+ 103               	#elif defined (__AVR_AT43USB320__)
+ 104               	#  include <avr/io43u32x.h>
+ 105               	#elif defined (__AVR_AT43USB355__)
+ 106               	#  include <avr/io43u35x.h>
+ 107               	#elif defined (__AVR_AT76C711__)
+ 108               	#  include <avr/io76c711.h>
+ 109               	#elif defined (__AVR_AT86RF401__)
+ 110               	#  include <avr/io86r401.h>
+ 111               	#elif defined (__AVR_AT90PWM1__)
+ 112               	#  include <avr/io90pwm1.h>
+ 113               	#elif defined (__AVR_AT90PWM2__)
+ 114               	#  include <avr/io90pwmx.h>
+ 115               	#elif defined (__AVR_AT90PWM2B__)
+ 116               	#  include <avr/io90pwm2b.h>
+ 117               	#elif defined (__AVR_AT90PWM3__)
+ 118               	#  include <avr/io90pwmx.h>
+ 119               	#elif defined (__AVR_AT90PWM3B__)
+ 120               	#  include <avr/io90pwm3b.h>
+ 121               	#elif defined (__AVR_AT90PWM216__)
+ 122               	#  include <avr/io90pwm216.h>
+ 123               	#elif defined (__AVR_AT90PWM316__)
+ 124               	#  include <avr/io90pwm316.h>
+ 125               	#elif defined (__AVR_AT90PWM81__)
+ 126               	#  include <avr/io90pwm81.h>
+ 127               	#elif defined (__AVR_ATmega16M1__)
+ 128               	#  include <avr/iom16m1.h>
+ 129               	#elif defined (__AVR_ATmega16U4__)
+ 130               	#  include <avr/iom16u4.h>
+ 131               	#elif defined (__AVR_ATmega32C1__)
+ 132               	#  include <avr/iom32c1.h>
+ 133               	#elif defined (__AVR_ATmega32M1__)
+ 134               	#  include <avr/iom32m1.h>
+ 135               	#elif defined (__AVR_ATmega32U4__)
+ 136               	#  include <avr/iom32u4.h>
+ 137               	#elif defined (__AVR_ATmega32U6__)
+ 138               	#  include <avr/iom32u6.h>
+ 139               	#elif defined (__AVR_ATmega64C1__)
+ 140               	#  include <avr/iom64c1.h>
+ 141               	#elif defined (__AVR_ATmega64M1__)
+ 142               	#  include <avr/iom64m1.h>
+ 143               	#elif defined (__AVR_ATmega128__)
+ 144               	#  include <avr/iom128.h>
+ 145               	#elif defined (__AVR_ATmega1280__)
+ 146               	#  include <avr/iom1280.h>
+ 147               	#elif defined (__AVR_ATmega1281__)
+ 148               	#  include <avr/iom1281.h>
+ 149               	#elif defined (__AVR_ATmega1284P__)
+ 150               	#  include <avr/iom1284p.h>
+ 151               	#elif defined (__AVR_ATmega128RFA1__)
+ 152               	#  include <avr/iom128rfa1.h>
+ 153               	#elif defined (__AVR_ATmega2560__)
+ 154               	#  include <avr/iom2560.h>
+ 155               	#elif defined (__AVR_ATmega2561__)
+ 156               	#  include <avr/iom2561.h>
+ 157               	#elif defined (__AVR_AT90CAN32__)
+ 158               	#  include <avr/iocan32.h>
+ 159               	#elif defined (__AVR_AT90CAN64__)
+ 160               	#  include <avr/iocan64.h>
+ 161               	#elif defined (__AVR_AT90CAN128__)
+ 162               	#  include <avr/iocan128.h>
+ 163               	#elif defined (__AVR_AT90USB82__)
+ 164               	#  include <avr/iousb82.h>
+ 165               	#elif defined (__AVR_AT90USB162__)
+ 166               	#  include <avr/iousb162.h>
+ 167               	#elif defined (__AVR_AT90USB646__)
+ 168               	#  include <avr/iousb646.h>
+ 169               	#elif defined (__AVR_AT90USB647__)
+ 170               	#  include <avr/iousb647.h>
+ 171               	#elif defined (__AVR_AT90USB1286__)
+ 172               	#  include <avr/iousb1286.h>
+ 173               	#elif defined (__AVR_AT90USB1287__)
+ 174               	#  include <avr/iousb1287.h>
+ 175               	#elif defined (__AVR_ATmega64__)
+ 176               	#  include <avr/iom64.h>
+ 177               	#elif defined (__AVR_ATmega640__)
+ 178               	#  include <avr/iom640.h>
+ 179               	#elif defined (__AVR_ATmega644__)
+ 180               	#  include <avr/iom644.h>
+ 181               	#elif defined (__AVR_ATmega644P__)
+ 182               	#  include <avr/iom644.h>
+ 183               	#elif defined (__AVR_ATmega645__)
+ 184               	#  include <avr/iom645.h>
+ 185               	#elif defined (__AVR_ATmega6450__)
+ 186               	#  include <avr/iom6450.h>
+ 187               	#elif defined (__AVR_ATmega649__)
+ 188               	#  include <avr/iom649.h>
+ 189               	#elif defined (__AVR_ATmega6490__)
+ 190               	#  include <avr/iom6490.h>
+ 191               	#elif defined (__AVR_ATmega103__)
+ 192               	#  include <avr/iom103.h>
+ 193               	#elif defined (__AVR_ATmega32__)
+ 194               	#  include <avr/iom32.h>
+ 195               	#elif defined (__AVR_ATmega323__)
+ 196               	#  include <avr/iom323.h>
+ 197               	#elif defined (__AVR_ATmega324P__)
+ 198               	#  include <avr/iom324.h>
+ 199               	#elif defined (__AVR_ATmega325__)
+ 200               	#  include <avr/iom325.h>
+ 201               	#elif defined (__AVR_ATmega325P__)
+ 202               	#  include <avr/iom325.h>
+ 203               	#elif defined (__AVR_ATmega3250__)
+ 204               	#  include <avr/iom3250.h>
+ 205               	#elif defined (__AVR_ATmega3250P__)
+ 206               	#  include <avr/iom3250.h>
+ 207               	#elif defined (__AVR_ATmega328P__)
+ 208               	#  include <avr/iom328p.h>
+ 209               	#elif defined (__AVR_ATmega329__)
+ 210               	#  include <avr/iom329.h>
+ 211               	#elif defined (__AVR_ATmega329P__)
+ 212               	#  include <avr/iom329.h>
+ 213               	#elif defined (__AVR_ATmega3290__)
+ 214               	#  include <avr/iom3290.h>
+ 215               	#elif defined (__AVR_ATmega3290P__)
+ 216               	#  include <avr/iom3290.h>
+ 217               	#elif defined (__AVR_ATmega32HVB__)
+ 218               	#  include <avr/iom32hvb.h>
+ 219               	#elif defined (__AVR_ATmega406__)
+ 220               	#  include <avr/iom406.h>
+ 221               	#elif defined (__AVR_ATmega16__)
+ 222               	#  include <avr/iom16.h>
+   1               	/* Copyright (c) 2004 Eric B. Weddington
+ 223               	#elif defined (__AVR_ATmega161__)
+ 224               	#  include <avr/iom161.h>
+ 225               	#elif defined (__AVR_ATmega162__)
+ 226               	#  include <avr/iom162.h>
+ 227               	#elif defined (__AVR_ATmega163__)
+ 228               	#  include <avr/iom163.h>
+ 229               	#elif defined (__AVR_ATmega164P__)
+ 230               	#  include <avr/iom164.h>
+ 231               	#elif defined (__AVR_ATmega165__)
+ 232               	#  include <avr/iom165.h>
+ 233               	#elif defined (__AVR_ATmega165P__)
+ 234               	#  include <avr/iom165p.h>
+ 235               	#elif defined (__AVR_ATmega168__)
+ 236               	#  include <avr/iom168.h>
+ 237               	#elif defined (__AVR_ATmega168P__)
+ 238               	#  include <avr/iom168p.h>
+ 239               	#elif defined (__AVR_ATmega169__)
+ 240               	#  include <avr/iom169.h>
+ 241               	#elif defined (__AVR_ATmega169P__)
+ 242               	#  include <avr/iom169p.h>
+ 243               	#elif defined (__AVR_ATmega8HVA__)
+ 244               	#  include <avr/iom8hva.h>
+ 245               	#elif defined (__AVR_ATmega16HVA__)
+ 246               	#  include <avr/iom16hva.h>
+ 247               	#elif defined (__AVR_ATmega8__)
+ 248               	#  include <avr/iom8.h>
+ 249               	#elif defined (__AVR_ATmega48__)
+ 250               	#  include <avr/iom48.h>
+ 251               	#elif defined (__AVR_ATmega48P__)
+ 252               	#  include <avr/iom48p.h>
+ 253               	#elif defined (__AVR_ATmega88__)
+ 254               	#  include <avr/iom88.h>
+ 255               	#elif defined (__AVR_ATmega88P__)
+ 256               	#  include <avr/iom88p.h>
+ 257               	#elif defined (__AVR_ATmega8515__)
+ 258               	#  include <avr/iom8515.h>
+ 259               	#elif defined (__AVR_ATmega8535__)
+ 260               	#  include <avr/iom8535.h>
+ 261               	#elif defined (__AVR_AT90S8535__)
+ 262               	#  include <avr/io8535.h>
+ 263               	#elif defined (__AVR_AT90C8534__)
+ 264               	#  include <avr/io8534.h>
+ 265               	#elif defined (__AVR_AT90S8515__)
+ 266               	#  include <avr/io8515.h>
+ 267               	#elif defined (__AVR_AT90S4434__)
+ 268               	#  include <avr/io4434.h>
+ 269               	#elif defined (__AVR_AT90S4433__)
+ 270               	#  include <avr/io4433.h>
+ 271               	#elif defined (__AVR_AT90S4414__)
+ 272               	#  include <avr/io4414.h>
+ 273               	#elif defined (__AVR_ATtiny22__)
+ 274               	#  include <avr/iotn22.h>
+ 275               	#elif defined (__AVR_ATtiny26__)
+ 276               	#  include <avr/iotn26.h>
+ 277               	#elif defined (__AVR_AT90S2343__)
+ 278               	#  include <avr/io2343.h>
+ 279               	#elif defined (__AVR_AT90S2333__)
+ 280               	#  include <avr/io2333.h>
+ 281               	#elif defined (__AVR_AT90S2323__)
+ 282               	#  include <avr/io2323.h>
+ 283               	#elif defined (__AVR_AT90S2313__)
+ 284               	#  include <avr/io2313.h>
+ 285               	#elif defined (__AVR_ATtiny2313__)
+ 286               	#  include <avr/iotn2313.h>
+ 287               	#elif defined (__AVR_ATtiny13__)
+ 288               	#  include <avr/iotn13.h>
+ 289               	#elif defined (__AVR_ATtiny13A__)
+ 290               	#  include <avr/iotn13a.h>
+ 291               	#elif defined (__AVR_ATtiny25__)
+ 292               	#  include <avr/iotn25.h>
+ 293               	#elif defined (__AVR_ATtiny45__)
+ 294               	#  include <avr/iotn45.h>
+ 295               	#elif defined (__AVR_ATtiny85__)
+ 296               	#  include <avr/iotn85.h>
+ 297               	#elif defined (__AVR_ATtiny24__)
+ 298               	#  include <avr/iotn24.h>
+ 299               	#elif defined (__AVR_ATtiny44__)
+ 300               	#  include <avr/iotn44.h>
+ 301               	#elif defined (__AVR_ATtiny84__)
+ 302               	#  include <avr/iotn84.h>
+ 303               	#elif defined (__AVR_ATtiny261__)
+ 304               	#  include <avr/iotn261.h>
+ 305               	#elif defined (__AVR_ATtiny461__)
+ 306               	#  include <avr/iotn461.h>
+ 307               	#elif defined (__AVR_ATtiny861__)
+ 308               	#  include <avr/iotn861.h>
+ 309               	#elif defined (__AVR_ATtiny43U__)
+ 310               	#  include <avr/iotn43u.h>
+ 311               	#elif defined (__AVR_ATtiny48__)
+ 312               	#  include <avr/iotn48.h>
+ 313               	#elif defined (__AVR_ATtiny88__)
+ 314               	#  include <avr/iotn88.h>
+ 315               	#elif defined (__AVR_ATtiny87__)
+ 316               	#  include <avr/iotn87.h>
+ 317               	#elif defined (__AVR_ATtiny167__)
+ 318               	#  include <avr/iotn167.h>
+ 319               	#elif defined (__AVR_AT90SCR100__)
+ 320               	#  include <avr/io90scr100.h>
+ 321               	#elif defined (__AVR_ATxmega16A4__)
+ 322               	#  include <avr/iox16a4.h>
+ 323               	#elif defined (__AVR_ATxmega16D4__)
+ 324               	#  include <avr/iox16d4.h>
+ 325               	#elif defined (__AVR_ATxmega32A4__)
+ 326               	#  include <avr/iox32a4.h>
+ 327               	#elif defined (__AVR_ATxmega32D4__)
+ 328               	#  include <avr/iox32d4.h>
+ 329               	#elif defined (__AVR_ATxmega64A1__)
+ 330               	#  include <avr/iox64a1.h>
+ 331               	#elif defined (__AVR_ATxmega64A3__)
+ 332               	#  include <avr/iox64a3.h>
+ 333               	#elif defined (__AVR_ATxmega128A1__)
+ 334               	#  include <avr/iox128a1.h>
+ 335               	#elif defined (__AVR_ATxmega128A3__)
+ 336               	#  include <avr/iox128a3.h>
+ 337               	#elif defined (__AVR_ATxmega256A3__)
+ 338               	#  include <avr/iox256a3.h>
+ 339               	#elif defined (__AVR_ATxmega256A3B__)
+ 340               	#  include <avr/iox256a3b.h>
+ 341               	#elif defined (__AVR_ATA6289__)
+ 342               	#  include <avr/ioa6289.h>
+ 343               	/* avr1: the following only supported for assembler programs */
+ 344               	#elif defined (__AVR_ATtiny28__)
+ 345               	#  include <avr/iotn28.h>
+ 346               	#elif defined (__AVR_AT90S1200__)
+ 347               	#  include <avr/io1200.h>
+ 348               	#elif defined (__AVR_ATtiny15__)
+ 349               	#  include <avr/iotn15.h>
+ 350               	#elif defined (__AVR_ATtiny12__)
+ 351               	#  include <avr/iotn12.h>
+ 352               	#elif defined (__AVR_ATtiny11__)
+ 353               	#  include <avr/iotn11.h>
+ 354               	#else
+ 355               	#  if !defined(__COMPILING_AVR_LIBC__)
+ 356               	#    warning "device type not defined"
+ 357               	#  endif
+ 358               	#endif
+ 359               	
+ 360               	#include <avr/portpins.h>
+   1               	/* Copyright (c) 2003  Theodore A. Roth
+ 361               	
+ 362               	#include <avr/common.h>
+   1               	/* Copyright (c) 2007 Eric B. Weddington
+ 363               	
+ 364               	#include <avr/version.h>
+   1               	/* Copyright (c) 2005, Joerg Wunsch                               -*- c -*-
+ 365               	
+ 366               	/* Include fuse.h after individual IO header files. */
+ 367               	#include <avr/fuse.h>
+   1               	/* Copyright (c) 2007, Atmel Corporation
+ 368               	
+ 369               	/* Include lock.h after individual IO header files. */
+ 370               	#include <avr/lock.h>
+   1               	/* Copyright (c) 2007, Atmel Corporation
+ 371               	
+  12               	#define LCD_ASM
+  13               	#include "lcd.h"
+   1               	/* ***********************************************************************
+  14               	
+  15               	#define __tmp_reg__ r0
+  16               	#define __zero_reg__    r1
+  17               	
+  18               	    .text
+  19               	    
+  20               	#ifndef XTAL
+  21               	#define XTAL                        16000000                // must be changed
+  22               	#endif
+  23               	
+  24               	#define DELAY_ONE_MILLISECOND       (XTAL / 4 / 1000)       // must > 8
+  25               	
+  26               	
+  27               	// void mswait(uint16_t ms);           
+  28               	// wait some milliseconds, XTAL must be correct defined
+  29               	
+  30               	        .global glcdWait                // used T0,T1 stack 0
+  31               	mswait:
+  32:lcd.asm       ****         sbiw    r24, 1                                   // 2
+  33:lcd.asm       ****         brcc    mswait1                               // 2
+  34:lcd.asm       ****         ret                                             // 2 -2 = 0 for no branch in both loops
+  35               	mswait1:
+  36:lcd.asm       ****         nop
+  37:lcd.asm       ****         ldi     r26, lo8(DELAY_ONE_MILLISECOND -4)       // 1
+  38:lcd.asm       ****         ldi     r27, hi8(DELAY_ONE_MILLISECOND -4)       // 1
+  39               	mswait2:
+  40:lcd.asm       ****         sbiw    r26, 1                                   // 2
+  41:lcd.asm       ****         brne    mswait2                               // 2 = 4, = 3 for last loop
+  42:lcd.asm       ****         rjmp    mswait                                // 2 = 8
+  43               	
+  44               	
+  45               	
+  46               	;void port_init_io(void)
+  47               	    .global port_init_io
+  48               	port_init_io:
+  49               	    ; setup serial data I/O pins
+  50               	
+  51:lcd.asm       ****     cbi     PORTB, LCD_RESET        ; display reset
+  52:lcd.asm       ****     sbi     DDRB, LCD_RESET         ; set reset as output
+  53               	;   sbi     DDRB, LCD_MISO          ; MISO is always input in SPI
+  54:lcd.asm       ****     sbi     DDRB, LCD_MOSI          ; MOSI must be set as output for SPI
+  55:lcd.asm       ****     sbi         PORTB, LCD_CS           ; deselect display 
+  56:lcd.asm       ****     sbi     DDRB, LCD_CS            ; SS must be output for Master mode to work
+  57               	
+  58               	
+  59:lcd.asm       ****     cbi     PORTB, LCD_SCK          ; set SCK lo
+  60:lcd.asm       ****     sbi     DDRB,  LCD_SCK          ; set SCK as output
+  61:lcd.asm       ****     sbi     PORTB, LCD_MISO         ; enable pull up of MISO to avoid floating input
+  62               	
+  63:lcd.asm       ****     sbi     PORTB, LCD_RS           ; start with RS=high
+  64:lcd.asm       ****     sbi     DDRB, LCD_RS            ; RS signal is output
+  65               	
+  66               	    ; setup serial data interface 
+  67               	    ; select clock phase positive going in middle of data
+  68               	    ; master mode
+  69               	    ; enable SPI
+  70               	    ; speed is CPUclock/2
+  71               	
+  72:lcd.asm       ****     ldi     r24,(1<<MSTR) | (1<<SPE); | (1<<SPR0);  ; Master Mode,  Enable SPI, fCPU/16 clock
+  73:lcd.asm       ****     out     SPCR,r24
+  74               	
+  75:lcd.asm       ****     ldi     r24,1           ; double speed bit
+  76:lcd.asm       ****     out     SPSR,r24
+  77               	
+  78:lcd.asm       ****     ldi     r24,1
+  79:lcd.asm       ****     ldi     r25,0
+  80:lcd.asm       ****     rcall   mswait          ; wait one ms to have a nice reset
+  81:lcd.asm       ****     sbi     PORTB, LCD_RESET    ; release reset
+  82:lcd.asm       ****     in      r24,SPSR        ; clear status
+  83:lcd.asm       ****     ret
+  84               	
+  85               	
+  86               	;************************************************
+  87               	; write table with r30/r31 pointer to table
+  88               	; r22 number of bytes to read
+  89               	wrtab:
+  90:lcd.asm       ****     lpm     r24,Z+          ; load byte from table
+  91:lcd.asm       ****     rcall   lcd_wrcmd
+  92:lcd.asm       ****     dec     r22
+  93:lcd.asm       ****     brne    wrtab
+  94:lcd.asm       ****     ret
+  95               	
+  96               	
+  97               	;************************************************
+  98               	;initLCD
+  99               	;        r22/r24
+ 100               	;void lcd_init(void)
+ 101               	    .global lcd_init
+ 102               	
+ 103               	lcd_init:
+ 104:lcd.asm       ****     push    r30
+ 105:lcd.asm       ****     push    r31
+ 106               	
+ 107:lcd.asm       ****     sbi     PORTB,LCD_CS    ;deselect Display
+ 108:lcd.asm       ****     sbi     DDRB,LCD_CS     ;
+ 109:lcd.asm       ****     call    port_init_io    ;init SPI
+ 110               	    
+ 111:lcd.asm       ****     ldi     r30,lo8(INIT1)  ;set pointer to table
+ 112:lcd.asm       ****     ldi     r31,hi8(INIT1)       
+ 113:lcd.asm       ****     ldi     r22,24      ;number of bytes to be transmitted
+ 114:lcd.asm       ****     rcall   wrtab
+ 115               	        
+ 116               	    ; wait for settling
+ 117:lcd.asm       ****     ldi     r24,7
+ 118:lcd.asm       ****     ldi     r25,0
+ 119:lcd.asm       ****     rcall   mswait
+ 120               	
+ 121:lcd.asm       ****     ldi     r30,lo8(INIT2)  ;set pointer to table
+ 122:lcd.asm       ****     ldi     r31,hi8(INIT2)       
+ 123:lcd.asm       ****     ldi     r22,40          ;number of bytes to be transmitted
+ 124:lcd.asm       ****     rcall   wrtab
+ 125               	
+ 126               	    ; wait for settling
+ 127:lcd.asm       ****     ldi     r24,50
+ 128:lcd.asm       ****     ldi     r25,0
+ 129:lcd.asm       ****     rcall   mswait
+ 130               	
+ 131:lcd.asm       ****     ldi     r30,lo8(INIT3)  ;set pointer to table
+ 132:lcd.asm       ****     ldi     r31,hi8(INIT3)       
+ 133:lcd.asm       ****     ldi     r22,2          ;number of bytes to be transmitted
+ 134:lcd.asm       ****     rcall   wrtab
+ 135               	
+ 136               	
+ 137               	    ;   write initial screen command
+ 138:lcd.asm       ****     cbi     PORTB,LCD_CS    ;select Display
+ 139               	
+ 140:lcd.asm       ****     ldi     r24,0xEF
+ 141:lcd.asm       ****     rcall   lcd_wrcmd
+ 142:lcd.asm       ****     ldi     r24,0x90
+ 143:lcd.asm       ****     rcall   lcd_wrcmd
+ 144:lcd.asm       ****     ldi     r24,0x00
+ 145:lcd.asm       ****     rcall   lcd_wrcmd
+ 146:lcd.asm       ****     ldi     r24,0x00
+ 147:lcd.asm       ****     rcall   lcd_wrcmd
+ 148               	
+ 149:lcd.asm       ****     rcall   lcd_clrscr
+ 150               	
+ 151:lcd.asm       ****     pop     r31
+ 152:lcd.asm       ****     pop     r30
+ 153:lcd.asm       ****     ret
+ 154               	
+ 155               	;************************************************
+ 156               	;clear LCD
+ 157               	;        r24
+ 158               	;void lcd_clrscr(void)
+ 159               	    .global lcd_clrscr
+ 160               	lcd_clrscr:
+ 161:lcd.asm       ****     push    r30
+ 162:lcd.asm       ****     push    r31
+ 163               	
+ 164               	    ; send window write start sequence
+ 165:lcd.asm       ****     ldi     r24,0xEF
+ 166:lcd.asm       ****     rcall   lcd_wrcmd
+ 167:lcd.asm       ****     ldi     r24,0x90
+ 168:lcd.asm       ****     rcall   lcd_wrcmd
+ 169:lcd.asm       ****     ldi     r24,0x05
+ 170:lcd.asm       ****     rcall   lcd_wrcmd
+ 171:lcd.asm       ****     ldi     r24,0x00
+ 172:lcd.asm       ****     rcall   lcd_wrcmd
+ 173:lcd.asm       ****     ldi     r24,0x06
+ 174:lcd.asm       ****     rcall   lcd_wrcmd
+ 175:lcd.asm       ****     ldi     r24,0x00
+ 176:lcd.asm       ****     rcall   lcd_wrcmd
+ 177:lcd.asm       ****     ldi     r24,0x07
+ 178:lcd.asm       ****     rcall   lcd_wrcmd
+ 179:lcd.asm       ****     ldi     r24,0x00
+ 180:lcd.asm       ****     rcall   lcd_wrcmd
+ 181               	
+ 182               	
+ 183               	    ; now 132*176*2 bytes are to be transmitted
+ 184:lcd.asm       ****     ldi     r31, 0xB5
+ 185:lcd.asm       ****     ldi     r30, 0x80
+ 186:lcd.asm       ****     ldi     r24, 0xFF
+ 187               	LCD_CLEAR_1:
+ 188:lcd.asm       ****     rcall   lcd_wrdata
+ 189:lcd.asm       ****     sbiw    r30,1
+ 190:lcd.asm       ****     brne    LCD_CLEAR_1
+ 191               	
+ 192:lcd.asm       ****     pop r31
+ 193:lcd.asm       ****     pop r30
+ 194:lcd.asm       ****     ret
+ 195               	
+ 196               	
+ 197               	;************************************************
+ 198               	;send an LCD command
+ 199               	;        r24
+ 200               	    .global lcd_wrcmd
+ 201               	lcd_wrcmd:
+ 202:lcd.asm       ****     cbi     PORTB,LCD_CS    ;select Display
+ 203:lcd.asm       ****     sbi     PORTB,LCD_RS    ; set RS line
+ 204:lcd.asm       ****     rjmp    SPI_SEND
+ 205               	
+ 206               	;************************************************
+ 207               	;send LCD data
+ 208               	;        r24
+ 209               	;void lcd_wrdata(u08 data)
+ 210               	    .global lcd_wrdata
+ 211               	lcd_wrdata:
+ 212:lcd.asm       ****     cbi     PORTB,LCD_CS    ;select Display
+ 213:lcd.asm       ****     cbi     PORTB,LCD_RS    ; clear RS line
+ 214               	    ;fall trough
+ 215               	
+ 216               	;************************************************
+ 217               	;using the SPI for communication
+ 218               	
+ 219               	SPI_SEND:   
+ 220:lcd.asm       ****     sbi SPCR,SPE        ;enable SPI
+ 221:lcd.asm       ****     out SPDR,r24        ;load byte in SPI data register
+ 222               	SPI_SEND_0: 
+ 223:lcd.asm       ****     sbis    SPSR,SPIF
+ 224:lcd.asm       ****     rjmp    SPI_SEND_0      ;transmitt byte to LCD
+ 225:lcd.asm       ****     in  r0,SPDR
+ 226:lcd.asm       ****     sbi PORTB,LCD_CS        ;deselect Display
+ 227:lcd.asm       ****     ret
+ 228               	
+ 229               	
+ 230               	; Init table
+ 231               	
+ 232               	INIT1:  ; 24bytes
+ 233 00dc FDFD FDFD 	.byte 0xFD, 0xFD, 0xFD, 0xFD
+ 234 00e0 EF00 EE04 	.byte 0xEF, 0x00, 0xEE, 0x04, 0x1B, 0x04, 0xFE, 0xFE, 0xFE, 0xFE, 0xEF, 0x90, 0x4A, 0x04
+ 234      1B04 FEFE 
+ 234      FEFE EF90 
+ 234      4A04 
+ 235 00ee 7F3F EE04 	.byte 0x7F, 0x3F, 0xEE, 0x04, 0x43, 0x06 
+ 235      4306 
+ 236               	
+ 237               	INIT2:  ; 40bytes
+ 238 00f4 EF90 0983 	.byte 0xEF, 0x90,  0x09, 0x83,  0x08, 0x00,  0x0B, 0xAF,  0x0A, 0x00,  0x05, 0x00,  0x06, 0x00
+ 238      0800 0BAF 
+ 238      0A00 0500 
+ 238      0600 
+ 239 0102 0700 EF00 	.byte 0x07, 0x00,  0xEF, 0x00,  0xEE, 0x0C,  0xEF, 0x90,  0x00, 0x80,  0xEF, 0xB0,  0x49, 0x02 
+ 239      EE0C EF90 
+ 239      0080 EFB0 
+ 239      4902 
+ 240 0110 EF00 7F01 	.byte 0xEF, 0x00,  0x7F, 0x01,  0xE1, 0x81,  0xE2, 0x02,  0xE2, 0x76,  0xE1, 0x83
+ 240      E181 E202 
+ 240      E276 E183 
+ 241               	
+ 242               	INIT3:  ; 2bytes
+ 243 011c 8001      	.byte  0x80, 0x01
+ 244               	
+ 245               	; end of file
+DEFINED SYMBOLS
+             lcd.asm:31     .text:00000000 mswait
+             lcd.asm:35     .text:00000006 mswait1
+             lcd.asm:39     .text:0000000c mswait2
+             lcd.asm:48     .text:00000012 port_init_io
+             lcd.asm:89     .text:0000003a wrtab
+             lcd.asm:201    .text:000000c4 lcd_wrcmd
+             lcd.asm:103    .text:00000044 lcd_init
+             lcd.asm:232    .text:000000dc INIT1
+             lcd.asm:237    .text:000000f4 INIT2
+             lcd.asm:242    .text:0000011c INIT3
+             lcd.asm:160    .text:0000008e lcd_clrscr
+             lcd.asm:187    .text:000000b8 LCD_CLEAR_1
+             lcd.asm:211    .text:000000ca lcd_wrdata
+             lcd.asm:219    .text:000000ce SPI_SEND
+             lcd.asm:222    .text:000000d2 SPI_SEND_0
+
+UNDEFINED SYMBOLS
+glcdWait
